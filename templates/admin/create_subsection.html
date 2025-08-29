@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Dodaj Poddział{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Dodaj Poddział
+                        <small class="text-muted">do działu: {{ section.title }}</small>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Nazwa poddziału *</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Opis poddziału</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Opcjonalny opis poddziału..."></textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin_edit_section', section_id=section.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Anuluj
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Utwórz poddział
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Panel Główny{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Panel Główny</h1>
+            <p class="lead">Wybierz dział, aby rozpocząć naukę:</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for section in sections %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-book me-2 text-primary"></i>{{ section.title }}
+                    </h5>
+                    {% if section.description %}
+                    <p class="card-text">{{ section.description[:100] }}{% if section.description|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                    <div class="mt-auto">
+                        <small class="text-muted">
+                            <i class="fas fa-file-alt me-1"></i>{{ section.pages|length }} stron
+                            {% if section.subsections %}
+                            <br><i class="fas fa-folder me-1"></i>{{ section.subsections|length }} poddziałów
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('view_section', section_id=section.id) }}" class="btn btn-primary w-100">
+                        <i class="fas fa-arrow-right me-2"></i>Przejdź do działu
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                Brak dostępnych działów. 
+                {% if session.get('is_admin') %}
+                <a href="{{ url_for('admin_panel') }}" class="alert-link">Przejdź do panelu administracyjnego</a>, aby dodać treść.
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

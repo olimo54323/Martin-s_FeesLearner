@@ -1,0 +1,56 @@
+# Ignorowanie wygenerowanych plików JSON
+*.json
+uploads/
+
+# Ignorowanie wygenerowanych raportów PDF
+*.pdf
+
+# Ignorowanie plików środowiska Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.venv
+venv/
+ENV/
+env/
+
+# Ignorowanie innych plików tymczasowych
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logi
+*.log
+logs/
+
+# pliki bazy danych
+*.db
+*.sqlite3

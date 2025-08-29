@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Edytuj Dział: {{ section.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-edit me-2"></i>Edytuj: {{ section.title }}</h1>
+                <div>
+                    <a href="{{ url_for('view_section', section_id=section.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>Podgląd
+                    </a>
+                    <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Panel admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-folder me-2"></i>Poddziały</h5>
+                </div>
+                <div class="card-body">
+                    {% if section.subsections %}
+                    <div class="list-group">
+                        {% for subsection in section.subsections %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ subsection.title }}</h6>
+                                {% if subsection.description %}
+                                <small class="text-muted">{{ subsection.description }}</small>
+                                {% endif %}
+                                <br><small class="text-info">{{ subsection.pages|length }} stron</small>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" title="Edytuj">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Usuń">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-folder-open fa-2x mb-3"></i>
+                        <p>Brak poddziałów</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('admin_create_subsection', section_id=section.id) }}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Dodaj poddział
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Strony główne</h5>
+                </div>
+                <div class="card-body">
+                    {% set main_pages = section.pages | selectattr('subsection_id', 'none') | list %}
+                    {% if main_pages %}
+                    <div class="list-group list-group-flush">
+                        {% for page in main_pages %}
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span>{{ page.title }}</span>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('view_page', page_id=page.id) }}" class="btn btn-outline-primary" title="Podgląd">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('admin_edit_page', page_id=page.id) }}" class="btn btn-outline-success" title="Edytuj">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-file fa-2x mb-3"></i>
+                        <p>Brak stron głównych</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

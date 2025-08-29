@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section.title }} - Platforma E-Learning{% endblock %}
+
+{% block extra_css %}
+<style>
+    .content-area {
+        min-height: 400px;
+    }
+    .add-block-btn {
+        border: 2px dashed #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin: 20px 0;
+    }
+    .add-block-btn:hover {
+        background: rgba(102, 126, 234, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Strona główna</a></li>
+        {% for item in section.get_breadcrumb() %}
+        <li class="breadcrumb-item {% if loop.last %}active{% endif %}">
+            {% if not loop.last %}
+            <a href="{{ url_for('view_section', section_id=item.id) }}">{{ item.title }}</a>
+            {% else %}
+            {{ item.title }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+
+<!-- Admin toolbar -->
+{% if is_admin %}
+<div class="admin-toolbar mb-3" id="adminToolbar">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <button class="btn btn-sm btn-light" onclick="toggleEditMode()">
+                <i class="fas fa-edit"></i> Tryb edycji
+            </button>
+            <button class="btn btn-sm btn-success" onclick="showAddContentModal()">
+                <i class="fas fa-plus"></i> Dodaj treść
+            </button>
+            <button class="btn btn-sm btn-info" onclick="showAddExerciseModal()">
+                <i class="fas fa-tasks"></i> Dodaj ćwiczenie
+            </button>
+        </div>
+        <div>
+            <button class="btn btn-sm btn-danger" onclick="confirmDeleteSection({{ section.id }})">
+                <i class="fas fa-trash"></i> Usuń dział
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Main content -->
+    <div class="col-md-9">
+        <h1 class="mb-4">{{ section.title }}</h1>
+        
+        <!-- Subsections -->
+        {% if subsections %}
+        <div class="mb-4">
+            <h3>Poddziały</h3>
+            <div class="row">
+                {% for sub in subsections %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ sub.title }}</h5>
+                            <a href="{{ url_for('view_section', section_id=sub.id) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-arrow-right"></i> Przejdź
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Content blocks -->
+        <div class="content-area" id="contentArea">
+            {% for block in content_blocks %}
+            <div class="content-block block-type-{{ block.block_type }}" data-block-id="{{ block.id }}">
+                {% if is_admin %}
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <div class="block-controls">
+                    <button class="btn btn-sm btn-warning" onclick="editBlock({{ block.id }})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteBlock({{ block.id }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                {% endif %}
+                
+                {% if block.block_type == 'header' %}
+                    {% set metadata = block.get_metadata() %}
+                    <h{{ metadata.level|default(2) }} id="block-{{ block.id }}">{{ block.content }}</h{{ metadata.level|default(2) }}>
+                {% elif block.block_type == 'text' %}
+                    <div class="content-text">{{ block.content|safe }}</div>
+                {% elif block.block_type == 'video' %}
+                    <div class="ratio ratio-16x9">
+                        <iframe src="{{ block.content }}" allowfullscreen></iframe>
+                    </div>
+                {% elif block.block_type == 'presentation' %}
+                    <div class="presentation-container">
+                        <iframe src="{{ block.content }}" width="100%" height="500px"></iframe>
+                    </div>
+                {% elif block.block_type == 'task' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-tasks"></i> <strong>Zadanie:</strong> {{ block.content }}
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Exercises -->
+        {% if exercises %}
+        <div class="mt-5">
+            <h3>Ćwiczenia rachunkowe</h3>
+            {% for exercise in exercises %}
+            <div class="exercise-card" onclick="window.location.href='{{ url_for('view_exercise', exercise_id=exercise.id) }}'">
+                <h5>{{ exercise.title }}</h5>
+                <p>{{ exercise.description }}</p>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark">Max punktów: {{ exercise.max_points }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Table of Contents -->
+    <div class="col-md-3">
+        {% if toc %}
+        <div class="toc">
+            <h5 class="mb-3">Spis treści</h5>
+            {% for item in toc %}
+            <div class="toc-item" style="padding-left: {{ (item.level - 1) * 20 + 10 }}px">
+                <a href="#{{ item.id }}" class="text-decoration-none text-dark">{{ item.title }}</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Content Modal -->
+<div class="modal fade" id="addContentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dodaj blok treści</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Typ bloku</label>
+                    <select class="form-control" id="blockType" onchange="updateBlockForm()">
+                        <option value="text">Tekst</option>
+                        <option value="header">Nagłówek</option>
+                        <option value="video">Wideo</option>
+                        <option value="presentation">Prezentacja</option>
+                        <option value="task">Zadanie</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Treść</label>
+                    <textarea class="form-control" id="blockContent" rows="5"></textarea>
+                    <small class="text-muted" id="contentHelp">Wprowadź treść tekstową</small>
+                </div>
+                <div class="mb-3" id="metadataFields"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" onclick="saveContentBlock()">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Exercise Modal -->
+<div class="modal fade" id="addExerciseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('create_exercise') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dodaj ćwiczenie</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="section_id" value="{{ section.id }}">
+                    <div class="mb-3">
+                        <label class="form-label">Tytuł ćwiczenia</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opis</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Typ ćwiczenia</label>
+                        <select class="form-control" name="exercise_type">
+                            <option value="calculation">Rachunkowe</option>
+                            <option value="quiz">Quiz</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Utwórz</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let editMode = false;
+let sortable = null;
+
+function toggleEditMode() {
+    editMode = !editMode;
+    document.getElementById('contentArea').classList.toggle('edit-mode');
+    
+    if (editMode && !sortable) {
+        sortable = new Sortable(document.getElementById('contentArea'), {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: function(evt) {
+                const blockIds = Array.from(document.querySelectorAll('.content-block'))
+                    .map(block => block.dataset.blockId);
+                
+                fetch('/admin/content-blocks/reorder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ block_ids: blockIds })
+                });
+            }
+        });
+    }
+}
+
+function showAddContentModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addContentModal'));
+    modal.show();
+}
+
+function showAddExerciseModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addExerciseModal'));
+    modal.show();
+}
+
+function updateBlockForm() {
+    const blockType = document.getElementById('blockType').value;
+    const contentHelp = document.getElementById('contentHelp');
+    const metadataFields = document.getElementById('metadataFields');
+    
+    switch(blockType) {
+        case 'video':
+            contentHelp.textContent = 'Wprowadź URL do filmu (YouTube, Vimeo, etc.)';
+            metadataFields.innerHTML = '';
+            break;
+        case 'presentation':
+            contentHelp.textContent = 'Wprowadź URL do prezentacji (Google Slides, etc.)';
+            metadataFields.innerHTML = '';
+            break;
+        case 'header':
+            contentHelp.textContent = 'Wprowadź tekst nagłówka';
+            metadataFields.innerHTML = `
+                <label class="form-label">Poziom nagłówka</label>
+                <select class="form-control" id="headerLevel">
+                    <option value="1">H1</option>
+                    <option value="2" selected>H2</option>
+                    <option value="3">H3</option>
+                </select>
+            `;
+            break;
+        case 'task':
+            contentHelp.textContent = 'Opisz zadanie do wykonania';
+            metadataFields.innerHTML = `
+                <label class="form-label">Poziom trudności</label>
+                <select class="form-control" id="taskDifficulty">
+                    <option value="easy">Łatwe</option>
+                    <option value="medium">Średnie</option>
+                    <option value="hard">Trudne</option>
+                </select>
+            `;
+            break;
+        default:
+            contentHelp.textContent = 'Wprowadź treść tekstową';
+            metadataFields.innerHTML = '';
+    }
+}
+
+function saveContentBlock() {
+    const blockType = document.getElementById('blockType').value;
+    const content = document.getElementById('blockContent').value;
+    let metadata = {};
+    
+    if (blockType === 'header') {
+        metadata.level = document.getElementById('headerLevel').value;
+    } else if (blockType === 'task') {
+        metadata.difficulty = document.getElementById('taskDifficulty').value;
+    }
+    
+    const formData = new FormData();
+    formData.append('section_id', {{ section.id }});
+    formData.append('block_type', blockType);
+    formData.append('content', content);
+    formData.append('metadata', JSON.stringify(metadata));
+    
+    fetch('/admin/content-block/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function deleteBlock(blockId) {
+    if (confirm('Czy na pewno chcesz usunąć ten blok?')) {
+        fetch(`/admin/content-block/${blockId}/delete`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function editBlock(blockId) {
+    // Implement edit functionality
+    alert('Funkcja edycji w przygotowaniu');
+}
+
+function confirmDeleteSection(sectionId) {
+    if (confirm('Czy na pewno chcesz usunąć ten dział? Ta operacja usunie również wszystkie poddziały i treści!')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/section/${sectionId}/delete`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Strona Główna - E-Learning Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center" style="min-height: 80vh;">
+        <div class="col-md-8 col-lg-6">
+            <div class="text-center mb-5">
+                <h1 class="display-4 text-primary mb-3">
+                    <i class="fas fa-graduation-cap"></i>
+                    Platforma E-Learning
+                </h1>
+                <p class="lead text-muted">Witamy w nowoczesnej platformie do nauki online</p>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-sign-in-alt me-2"></i>Logowanie
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('login') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Nazwa użytkownika</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Hasło</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt me-2"></i>Zaloguj się
+                        </button>
+                    </form>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>
+                        <strong>Konta testowe:</strong><br>
+                        Administrator: admin/admin<br>
+                        Użytkownik: user/user
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Edytuj Stronę: {{ page.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-edit me-2"></i>Edytuj: {{ page.title }}</h1>
+                <div>
+                    <a href="{{ url_for('view_page', page_id=page.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>Podgląd
+                    </a>
+                    <a href="{{ url_for('admin_edit_section', section_id=page.section.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Powrót do działu
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-th-large me-2"></i>Bloki treści (Kafelki)</h5>
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addBlockModal">
+                        <i class="fas fa-plus me-2"></i>Dodaj blok
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="sortable-blocks">
+                        {% for block in content_blocks %}
+                        <div class="card mb-3 content-block-admin" data-block-id="{{ block.id }}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-grip-vertical text-muted me-2" title="Przeciągnij aby zmienić kolejność"></i>
+                                    <span class="badge bg-secondary me-2">{{ block.block_type }}</span>
+                                    <strong>{{ block.title or 'Bez tytułu' }}</strong>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="editBlockContent({{ block.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deleteBlockContent({{ block.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                {% if block.block_type == 'text' %}
+                                    <div class="text-content-preview">
+                                        {{ (block.content[:100] + '...') if block.content|length > 100 else block.content | safe }}
+                                    </div>
+                                {% elif block.block_type == 'video' %}
+                                    {% set video_data = block.content | fromjson %}
+                                    <small class="text-muted">Film: {{ video_data.url }}</small>
+                                {% elif block.block_type == 'slides' %}
+                                    {% set slides_data = block.content | fromjson %}
+                                    <small class="text-muted">Prezentacja: {{ slides_data.url }}</small>
+                                {% elif block.block_type == 'exercise' %}
+                                    {% set exercise_data = block.content | fromjson %}
+                                    <small class="text-muted">Pytanie: {{ exercise_data.question[:50] }}...</small>
+                                {% elif block.block_type == 'calculation_link' %}
+                                    {% set calc_data = block.content | fromjson %}
+                                    <small class="text-muted">Link do ćwiczenia: {{ calc_data.url }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if not content_blocks %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-th-large fa-3x mb-3"></i>
+                        <p>Brak bloków treści</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBlockModal">
+                            Dodaj pierwszy blok
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informacje o stronie</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Dział:</strong> {{ page.section.title }}</p>
+                    {% if page.subsection %}
+                    <p><strong>Poddział:</strong> {{ page.subsection.title }}</p>
+                    {% endif %}
+                    <p><strong>Utworzono:</strong> {{ page.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                    <p><strong>Bloków treści:</strong> {{ content_blocks|length }}</p>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Pomoc</h5>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <p><strong>Typy bloków:</strong></p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-font text-dark"></i> <strong>Text</strong> - Treść tekstowa z formatowaniem</li>
+                            <li><i class="fas fa-video text-danger"></i> <strong>Video</strong> - Osadzony film</li>
+                            <li><i class="fas fa-presentation text-info"></i> <strong>Slides</strong> - Prezentacja/slajdy</li>
+                            <li><i class="fas fa-question text-warning"></i> <strong>Exercise</strong> - Krótkie zadanie</li>
+                            <li><i class="fas fa-calculator text-success"></i> <strong>Calculation Link</strong> - Link do ćwiczenia rachunkowego</li>
+                        </ul>
+                        <p><strong>Tip:</strong> Przeciągnij bloki aby zmienić ich kolejność</p>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal dodawania bloku -->
+<div class="modal fade" id="addBlockModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dodaj Nowy Blok Treści</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_create_content_block', page_id=page.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="block_type" class="form-label">Typ bloku *</label>
+                        <select class="form-select" id="block_type" name="block_type" required onchange="showBlockFields()">
+                            <option value="">Wybierz typ bloku</option>
+                            <option value="text">Treść tekstowa</option>
+                            <option value="video">Film</option>
+                            <option value="slides">Prezentacja/Slajdy</option>
+                            <option value="exercise">Ćwiczenie</option>
+                            <option value="calculation_link">Link do ćwiczenia rachunkowego</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Tytuł bloku</label>
+                        <input type="text" class="form-control" id="title" name="title">
+                    </div>
+                    
+                    <!-- Pola specyficzne dla typu TEXT -->
+                    <div id="text-fields" class="block-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Treść</label>
+                            <textarea class="form-control" id="content" name="content" rows="6" 
+                                      placeholder="Wprowadź treść (HTML dozwolone)"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Pola specyficzne dla typu VIDEO -->
+                    <div id="video-fields" class="block-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL filmu *</label>
+                            <input type="url" class="form-control" name="url" placeholder="https://www.youtube.com/embed/...">
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Opis filmu</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Pola specyficzne dla typu SLIDES -->
+                    <div id="slides-fields" class="block-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL prezentacji *</label>
+                            <input type="url" class="form-control" name="url" placeholder="https://docs.google.com/presentation/d/.../embed">
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Opis prezentacji</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Pola specyficzne dla typu EXERCISE -->
+                    <div id="exercise-fields" class="block-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="question" class="form-label">Pytanie *</label>
+                            <input type="text" class="form-control" name="question" placeholder="Wprowadź pytanie">
+                        </div>
+                        <div class="mb-3">
+                            <label for="options" class="form-label">Opcje odpowiedzi *</label>
+                            <textarea class="form-control" name="options" rows="4" 
+                                      placeholder="Wprowadź opcje, każda w nowej linii&#10;A) Pierwsza opcja&#10;B) Druga opcja&#10;C) Trzecia opcja"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="correct_answer" class="form-label">Numer poprawnej odpowiedzi *</label>
+                            <input type="number" class="form-control" name="correct_answer" min="0" placeholder="0, 1, 2... (zaczynając od 0)">
+                        </div>
+                    </div>
+                    
+                    <!-- Pola specyficzne dla typu CALCULATION_LINK -->
+                    <div id="calculation-fields" class="block-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="calculation_url" class="form-label">URL ćwiczenia *</label>
+                            <input type="url" class="form-control" name="calculation_url" placeholder="https://example.com/calculator">
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Opis ćwiczenia</label>
+                            <textarea class="form-control" name="description" rows="2" 
+                                      placeholder="Krótki opis ćwiczenia rachunkowego"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Dodaj blok
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Funkcja pokazująca/ukrywająca pola w zależności od typu bloku
+function showBlockFields() {
+    const blockType = document.getElementById('block_type').value;
+    const allFields = document.querySelectorAll('.block-fields');
+    
+    // Ukryj wszystkie pola
+    allFields.forEach(field => field.style.display = 'none');
+    
+    // Pokaż odpowiednie pola
+    if (blockType) {
+        const targetFields = document.getElementById(blockType + '-fields');
+        if (targetFields) {
+            targetFields.style.display = 'block';
+        }
+    }
+}
+
+// Sortowanie bloków
+document.addEventListener('DOMContentLoaded', function() {
+    const sortableBlocks = document.getElementById('sortable-blocks');
+    if (sortableBlocks) {
+        new Sortable(sortableBlocks, {
+            animation: 150,
+            handle: '.fa-grip-vertical',
+            ghostClass: 'bg-light',
+            onEnd: function(evt) {
+                // Tutaj będzie kod do zapisania nowej kolejności
+                console.log('Zmieniono kolejność bloku z pozycji', evt.oldIndex, 'na', evt.newIndex);
+            }
+        });
+    }
+});
+
+function editBlockContent(blockId) {
+    alert('Edycja bloku będzie dostępna w pełnej wersji');
+}
+
+function deleteBlockContent(blockId) {
+    if (confirm('Czy na pewno chcesz usunąć ten blok treści?')) {
+        alert('Usuwanie bloku będzie dostępne w pełnej wersji');
+    }
+}
+</script>
+{% endblock %}

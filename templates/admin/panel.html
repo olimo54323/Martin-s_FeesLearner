@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Panel Administracyjny{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-cog me-2"></i>Panel Administracyjny</h1>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Powrót do panelu głównego
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Szybkie akcje</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_create_section') }}" class="btn btn-success">
+                            <i class="fas fa-book me-2"></i>Dodaj nowy dział
+                        </a>
+                        <a href="{{ url_for('admin_create_page') }}" class="btn btn-info">
+                            <i class="fas fa-file-alt me-2"></i>Dodaj nową stronę
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Zarządzanie działami</h5>
+                </div>
+                <div class="card-body">
+                    {% if sections %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nazwa działu</th>
+                                    <th>Poddziały</th>
+                                    <th>Strony</th>
+                                    <th>Data utworzenia</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for section in sections %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ section.title }}</strong>
+                                        {% if section.description %}
+                                        <br><small class="text-muted">{{ section.description[:50] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ section.subsections|length }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ section.pages|length }}</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ section.created_at.strftime('%d.%m.%Y') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('view_section', section_id=section.id) }}" 
+                                               class="btn btn-outline-primary" title="Podgląd">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_edit_section', section_id=section.id) }}" 
+                                               class="btn btn-outline-success" title="Edytuj">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-outline-danger" 
+                                                    onclick="deleteSection({{ section.id }})" title="Usuń">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-folder-open fa-3x mb-3"></i>
+                        <p>Brak utworzonych działów</p>
+                        <a href="{{ url_for('admin_create_section') }}" class="btn btn-primary">
+                            Utwórz pierwszy dział
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteSection(sectionId) {
+    if (confirm('Czy na pewno chcesz usunąć ten dział? Wszystkie poddziały i strony zostaną również usunięte.')) {
+        // Tutaj będzie implementacja usuwania
+        alert('Funkcja usuwania będzie dostępna w pełnej wersji');
+    }
+}
+</script>
+{% endblock %}

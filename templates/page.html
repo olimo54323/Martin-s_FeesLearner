@@ -1,0 +1,453 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Strona Główna - E-Learning Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center" style="min-height: 80vh;">
+        <div class="col-md-8 col-lg-6">
+            <div class="text-center mb-5">
+                <h1 class="display-4 text-primary mb-3">
+                    <i class="fas fa-graduation-cap"></i>
+                    Platforma E-Learning
+                </h1>
+                <p class="lead text-muted">Witamy w nowoczesnej platformie do nauki online</p>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-sign-in-alt me-2"></i>Logowanie
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('login') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Nazwa użytkownika</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Hasło</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt me-2"></i>Zaloguj się
+                        </button>
+                    </form>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>
+                        <strong>Konta testowe:</strong><br>
+                        Administrator: admin/admin<br>
+                        Użytkownik: user/user
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- templates/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Panel Główny{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Panel Główny</h1>
+            <p class="lead">Wybierz dział, aby rozpocząć naukę:</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for section in sections %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-book me-2 text-primary"></i>{{ section.title }}
+                    </h5>
+                    {% if section.description %}
+                    <p class="card-text">{{ section.description[:100] }}{% if section.description|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                    <div class="mt-auto">
+                        <small class="text-muted">
+                            <i class="fas fa-file-alt me-1"></i>{{ section.pages|length }} stron
+                            {% if section.subsections %}
+                            <br><i class="fas fa-folder me-1"></i>{{ section.subsections|length }} poddziałów
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('view_section', section_id=section.id) }}" class="btn btn-primary w-100">
+                        <i class="fas fa-arrow-right me-2"></i>Przejdź do działu
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                Brak dostępnych działów. 
+                {% if session.get('is_admin') %}
+                <a href="{{ url_for('admin_panel') }}" class="alert-link">Przejdź do panelu administracyjnego</a>, aby dodać treść.
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+<!-- templates/section.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ section.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Spis treści -->
+            <div class="toc sticky-top" style="top: 20px;">
+                <h5><i class="fas fa-list me-2"></i>Spis treści</h5>
+                
+                <!-- Poddziały -->
+                {% if section.subsections %}
+                <h6 class="mt-3">Poddziały:</h6>
+                <ul class="list-unstyled">
+                    {% for subsection in section.subsections %}
+                    <li class="mb-2">
+                        <i class="fas fa-folder me-2 text-warning"></i>
+                        <strong>{{ subsection.title }}</strong>
+                        {% if subsection.pages %}
+                        <ul class="list-unstyled ms-3 mt-1">
+                            {% for page in subsection.pages %}
+                            <li>
+                                <a href="{{ url_for('view_page', page_id=page.id) }}" class="text-decoration-none">
+                                    <i class="fas fa-file-alt me-1 text-primary"></i>{{ page.title }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                <!-- Strony główne działu -->
+                {% set main_pages = section.pages | selectattr('subsection_id', 'none') | list %}
+                {% if main_pages %}
+                <h6 class="mt-3">Strony główne:</h6>
+                <ul class="list-unstyled">
+                    {% for page in main_pages %}
+                    <li class="mb-1">
+                        <a href="{{ url_for('view_page', page_id=page.id) }}" class="text-decoration-none">
+                            <i class="fas fa-file-alt me-2 text-primary"></i>{{ page.title }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ section.title }}</h1>
+                {% if session.get('is_admin') %}
+                <div>
+                    <a href="{{ url_for('admin_edit_section', section_id=section.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i>Edytuj
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if section.description %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>{{ section.description }}
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                <!-- Poddziały as cards -->
+                {% for subsection in section.subsections %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-folder me-2 text-warning"></i>{{ subsection.title }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if subsection.description %}
+                            <p class="card-text">{{ subsection.description }}</p>
+                            {% endif %}
+                            {% if subsection.pages %}
+                            <h6>Strony w tym poddziale:</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for page in subsection.pages %}
+                                <li class="list-group-item px-0">
+                                    <a href="{{ url_for('view_page', page_id=page.id) }}" class="text-decoration-none">
+                                        <i class="fas fa-file-alt me-2 text-primary"></i>{{ page.title }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Strony główne as cards -->
+                {% for page in main_pages %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-file-alt me-2 text-primary"></i>{{ page.title }}
+                            </h5>
+                            <div class="mt-auto">
+                                <a href="{{ url_for('view_page', page_id=page.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-arrow-right me-2"></i>Otwórz stronę
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not section.subsections and not main_pages %}
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Ten dział nie zawiera jeszcze żadnych stron lub poddziałów.
+                {% if session.get('is_admin') %}
+                <br><a href="{{ url_for('admin_create_page') }}" class="alert-link">Dodaj pierwszą stronę</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- templates/page.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Nawigacja i spis treści -->
+            <div class="toc sticky-top" style="top: 20px;">
+                <h6>
+                    <a href="{{ url_for('view_section', section_id=page.section.id) }}" class="text-decoration-none">
+                        <i class="fas fa-arrow-left me-2"></i>{{ page.section.title }}
+                    </a>
+                </h6>
+                
+                {% if page.subsection %}
+                <p class="text-muted mb-2">
+                    <i class="fas fa-folder me-1"></i>{{ page.subsection.title }}
+                </p>
+                {% endif %}
+                
+                <!-- Spis akapitów na tej stronie -->
+                <h6 class="mt-3">Na tej stronie:</h6>
+                <ul class="list-unstyled" id="page-toc">
+                    <!-- Będzie wypełniane przez JavaScript na podstawie nagłówków -->
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ page.title }}</h1>
+                {% if session.get('is_admin') %}
+                <div>
+                    <a href="{{ url_for('admin_edit_page', page_id=page.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i>Edytuj stronę
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Bloki treści -->
+            <div id="content-blocks">
+                {% for block in content_blocks %}
+                <div class="content-block" data-block-id="{{ block.id }}" data-block-type="{{ block.block_type }}">
+                    {% if session.get('is_admin') %}
+                    <div class="block-controls">
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editBlock({{ block.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteBlock({{ block.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if block.block_type == 'text' %}
+                        {% if block.title %}
+                        <h3>{{ block.title }}</h3>
+                        {% endif %}
+                        <div class="content-text">{{ block.content | safe }}</div>
+                        
+                    {% elif block.block_type == 'video' %}
+                        {% set video_data = block.content | fromjson %}
+                        {% if block.title %}
+                        <h4><i class="fas fa-play-circle me-2 text-danger"></i>{{ block.title }}</h4>
+                        {% endif %}
+                        <div class="video-container mb-3">
+                            <div class="ratio ratio-16x9">
+                                <iframe src="{{ video_data.url }}" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                        {% if video_data.description %}
+                        <p class="text-muted">{{ video_data.description }}</p>
+                        {% endif %}
+                        
+                    {% elif block.block_type == 'slides' %}
+                        {% set slides_data = block.content | fromjson %}
+                        {% if block.title %}
+                        <h4><i class="fas fa-presentation me-2 text-info"></i>{{ block.title }}</h4>
+                        {% endif %}
+                        <div class="slides-container mb-3">
+                            <div class="ratio ratio-16x9">
+                                <iframe src="{{ slides_data.url }}" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                        {% if slides_data.description %}
+                        <p class="text-muted">{{ slides_data.description }}</p>
+                        {% endif %}
+                        
+                    {% elif block.block_type == 'exercise' %}
+                        {% set exercise_data = block.content | fromjson %}
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-question-circle me-2"></i>
+                                    {% if block.title %}{{ block.title }}{% else %}Ćwiczenie{% endif %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>{{ exercise_data.question }}</strong></p>
+                                <div class="exercise-options">
+                                    {% for option in exercise_data.options %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="exercise_{{ block.id }}" 
+                                               value="{{ loop.index0 }}" id="option_{{ block.id }}_{{ loop.index0 }}">
+                                        <label class="form-check-label" for="option_{{ block.id }}_{{ loop.index0 }}">
+                                            {{ option }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <button class="btn btn-primary mt-3" onclick="checkAnswer({{ block.id }}, '{{ exercise_data.correct_answer }}')">
+                                    <i class="fas fa-check me-2"></i>Sprawdź odpowiedź
+                                </button>
+                                <div id="result_{{ block.id }}" class="mt-3"></div>
+                            </div>
+                        </div>
+                        
+                    {% elif block.block_type == 'calculation_link' %}
+                        {% set calc_data = block.content | fromjson %}
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-calculator me-2"></i>
+                                    {% if block.title %}{{ block.title }}{% else %}Ćwiczenie rachunkowe{% endif %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if calc_data.description %}
+                                <p>{{ calc_data.description }}</p>
+                                {% endif %}
+                                <a href="{{ calc_data.url }}" class="btn btn-success" target="_blank">
+                                    <i class="fas fa-external-link-alt me-2"></i>Przejdź do ćwiczenia
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not content_blocks %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                Ta strona nie zawiera jeszcze żadnej treści.
+                {% if session.get('is_admin') %}
+                <br><a href="{{ url_for('admin_edit_page', page_id=page.id) }}" class="alert-link">Dodaj pierwszy blok treści</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Generuj spis treści na podstawie nagłówków
+    document.addEventListener('DOMContentLoaded', function() {
+        const toc = document.getElementById('page-toc');
+        const headings = document.querySelectorAll('.content-text h1, .content-text h2, .content-text h3, .content-text h4');
+        
+        headings.forEach((heading, index) => {
+            const id = `heading-${index}`;
+            heading.id = id;
+            
+            const li = document.createElement('li');
+            li.innerHTML = `<a href="#${id}" class="text-decoration-none">${heading.textContent}</a>`;
+            toc.appendChild(li);
+        });
+    });
+    
+    // Funkcja sprawdzania odpowiedzi w ćwiczeniach
+    function checkAnswer(blockId, correctAnswer) {
+        const selectedOption = document.querySelector(`input[name="exercise_${blockId}"]:checked`);
+        const resultDiv = document.getElementById(`result_${blockId}`);
+        
+        if (!selectedOption) {
+            resultDiv.innerHTML = '<div class="alert alert-warning">Proszę wybierz odpowiedź!</div>';
+            return;
+        }
+        
+        const selectedValue = selectedOption.value;
+        const isCorrect = selectedValue === correctAnswer;
+        
+        if (isCorrect) {
+            resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>Odpowiedź poprawna!</div>';
+        } else {
+            resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle me-2"></i>Odpowiedź niepoprawna. Spróbuj ponownie.</div>';
+        }
+    }
+    
+    // Funkcje administracyjne
+    function editBlock(blockId) {
+        alert('Funkcja edycji bloku będzie dostępna w następnej wersji');
+    }
+    
+    function deleteBlock(blockId) {
+        if (confirm('Czy na pewno chcesz usunąć ten blok?')) {
+            // Tutaj będzie kod do usuwania bloku
+            alert('Funkcja usuwania będzie dostępna w następnej wersji');
+        }
+    }
+</script>
+{% endblock %}
